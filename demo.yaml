@@ -1,0 +1,30 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    aws_region: ap-southeast-2
+  tasks:
+    - name: Main shared Nerv VPC
+      ec2_vpc:
+        state: absent
+        cidr_block: 10.10.0.0/16
+        resource_tags: {"nerv:environment": "prod", "nerv:role": "shared_network", "nerv:owner": "unassigned"}
+        region: "{{ aws_region }}"
+        dns_hostnames: no
+        dns_support: yes
+        instance_tenancy: default
+        internet_gateway: yes
+        subnets:
+          - cidr: 10.10.1.0/26
+            az:  "{{ aws_region }}a"
+            resource_tags: {"Name": "public"}
+          - cidr: 10.10.1.64/26
+            az:  "{{ aws_region }}b"
+            resource_tags: {"Name": "private"}
+      register: main_vpc
+    - name: Assign main VPC ID
+      set_fact:
+        main_vpc_id: "{{ main_vpc['vpc_id'] }}"
+    - name: Debug
+      debug: var=main_vpc['subnets']
