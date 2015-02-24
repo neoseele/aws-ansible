@@ -1,0 +1,26 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  sudo: true
+  vars:
+    drush_channel: pear.drush.org
+  tasks:
+    - name: Install php-pear
+      yum: pkg=php-pear state=latest
+
+    - name: pear | install channels
+      command: pear channel-discover {{ item }}
+      with_items: pear.drush.org
+      #when: pear.drush.org is defined
+      register: channel_result
+      changed_when: "'initialized' not in channel_result.stdout"
+      # TODO: This will always error out the first time it's run.
+      failed_when: "'already initialized' not in channel_result.stdout"
+
+    - name: pear | install packages
+      command: pear install {{ item }}
+      with_items: drush/drush
+      #when: drush/drush is defined
+      register: pear_result
+      changed_when: "'already installed' not in pear_result.stdout"
+      failed_when: "'already installed' not in pear_result.stdout and pear_result.stderr"
